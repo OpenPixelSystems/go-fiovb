@@ -1,0 +1,38 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      branch:
+        description: "Branch name to use"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: "ubuntu-22.04"
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: openpixelsystems/go-fiovb
+          fetch-depth: "0"
+          ref: ${{ inputs.branch || github.ref}}
+
+      - name: Install dependencies
+        run: sudo apt install gcc make cmake gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu golang-go
+
+      - name: Initialize submodules
+        run: git submodule update --init --recursive
+
+      - name: Build fiovb (amd64)
+        run: make amd64 HOST_COMPILER=gcc
+
+      - name: Build fiovb (arm64)
+        run: |
+          CROSS_COMPILER=aarch64-linux-gnu-gcc && \
+          export CC_FOR_TARGET=$CROSS_COMPILER && \
+          export CC=$CROSS_COMPILER && \
+          make arm64 CROSS_COMPILER=$CROSS_COMPILER
