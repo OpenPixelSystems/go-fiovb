@@ -13,23 +13,15 @@ on:
 
 jobs:
   build:
-    runs-on: "ubuntu-22.04"
+    runs-on: organization/ops
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          repository: openpixelsystems/go-fiovb
-          fetch-depth: "0"
-          ref: ${{ inputs.branch || github.ref}}
+          token: ${{ secrets.ARGON_TOKEN }}
 
-      - name: Install dependencies
-        run: sudo apt install gcc gcc-aarch64-linux-gnu golang-go
-
-      - name: Build fiovb (amd64)
-        run: make amd64
-
-      - name: Build fiovb (arm64)
-        run: |
-          CROSS_COMPILER=aarch64-linux-gnu-gcc && \
-          export CC_FOR_TARGET=$CROSS_COMPILER && \
-          export CC=$CROSS_COMPILER && \
-          make arm64
+      - name: Build
+        run:
+          podman build -t go-fiovb .
+          podman create --name go-fiovb go-fiovb:latest
+          podman cp go-fiovb:/go-fiovb/output/ .
+          podman rm go-fiovb
